@@ -1,10 +1,19 @@
 // import { data } from "./emoji.js";
 
 const API_URL = "http://api.codeoverdose.space/api/emoji/v1";
+let abortController = null;
 
 const getData = async (url, query = "") => {
   try {
-    const res = await fetch(url + query);
+    if (abortController) {
+      abortController.abort();
+    }
+
+    abortController = new AbortController();
+    const res = await fetch(url + query, {
+      signal: abortController.signal,
+    });
+    console.log(res);
     return res.json();
   } catch (error) {
     console.error(error);
@@ -36,17 +45,13 @@ function getUniqueString(keywords) {
 function filterEmojiCards(event) {
   const inputValue = event.target.value;
 
-  getData(API_URL, `/find/?query=${inputValue}`)
+  getData(API_URL, `/find/?query=${inputValue.toLowerCase()}`)
     .then((data) => {
-      const filteredEmojiCards = data.filter((emoji) =>
-        getUniqueString(emoji.keywords).toLowerCase().includes(inputValue)
-      );
-      renderEmojiCardAll(filteredEmojiCards);
+      renderEmojiCardAll(data);
     })
     .catch((error) => {
       console.error(error);
     });
-  
 }
 
 input.addEventListener("input", filterEmojiCards);
